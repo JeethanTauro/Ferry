@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/v1/endpoints")
-public class WebhookController {
+public class UserInteractionWebhookController {
 
     private final WebhookService webhookService;
     //This endpoint creates a unique id for a receiving a webhook
@@ -42,7 +42,7 @@ public class WebhookController {
     public ResponseEntity<?> createEndpoint(@RequestBody WebhookEndpointCreateRequest request) throws Exception {
         // 1) validate the user and get the user id
         Long userId = 1234l;
-        WebhookEndpointCreatedResponse response = webhookService.createWebhook(userId,request.getName(), request.getDestinationUrl());
+        WebhookEndpointCreatedResponse response = webhookService.createWebhook(userId,request.getName(), request.getDestinationUrl(), request.getProvider());
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
