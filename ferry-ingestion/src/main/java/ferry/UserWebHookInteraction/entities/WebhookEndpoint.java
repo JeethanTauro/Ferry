@@ -1,8 +1,6 @@
 package ferry.UserWebHookInteraction.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,10 +12,12 @@ import java.time.Instant;
 @Builder
 public class WebhookEndpoint {
     @Id
-    private String id; //the endpoint id
+    private String endpointId; //the endpoint id
 
     private Long userId; //the owner id
     private String endpoint;// the complete endpoint
+    @Enumerated(EnumType.STRING)
+    private Provider provider; //this is provided by the user either GITHUB, SWIGGY etc (for now only Github)
     private String name; //the name of the endpoint eg : github production endpoint
     private String destinationUrl; //the destination where ferry has to send the event
     private boolean active; //enable or disable the endpoint

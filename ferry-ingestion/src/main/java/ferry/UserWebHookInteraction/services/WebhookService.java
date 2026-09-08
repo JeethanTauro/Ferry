@@ -2,6 +2,7 @@ package ferry.UserWebHookInteraction.services;
 
 import ferry.UserWebHookInteraction.Util.FerryUtil;
 import ferry.UserWebHookInteraction.dtos.*;
+import ferry.UserWebHookInteraction.entities.Provider;
 import ferry.UserWebHookInteraction.entities.WebhookEndpoint;
 import ferry.UserWebHookInteraction.entities.WebhookUsage;
 import ferry.UserWebHookInteraction.repos.WebhookEndpointRepo;
@@ -18,6 +19,7 @@ import java.util.Optional;
 
 @Service
 @AllArgsConstructor
+//user facing services
 public class WebhookService {
     //create webhook : Done
     //delete webhook : Done
@@ -36,17 +38,18 @@ public class WebhookService {
 
 
     //creating the webhook and saving in the db
-    public WebhookEndpointCreatedResponse createWebhook(Long userId, String name, String destinationUrl) throws Exception {
+    public WebhookEndpointCreatedResponse createWebhook(Long userId, String name, String destinationUrl, Provider provider) throws Exception {
         //create a random unique id for the endpoint
         //create a random secret
         FerryUtil util = new FerryUtil();
         String secretToken = util.generateSecureString(); //by default the len is 32
-        String uniqueId = util.generateSecureString(25);
+        String endpointId = util.generateSecureString(25);
         WebhookEndpoint webhookEndpoint = WebhookEndpoint.builder()
-                .id(uniqueId)
+                .endpointId(endpointId)
                 .name(name)
+                .provider(provider)
                 .active(true)
-                .endpoint(baseUrl + "/webhooks/" + uniqueId)
+                .endpoint(baseUrl + "/webhooks/" + endpointId)
                 .userId(userId)
                 .destinationUrl(destinationUrl)
                 .secret(encryptionService.encrypt(secretToken))
