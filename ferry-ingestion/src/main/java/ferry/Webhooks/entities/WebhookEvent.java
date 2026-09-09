@@ -22,5 +22,5 @@ public class WebhookEvent {
     private Instant receivedAt; //time at which the event was received
     private HttpHeaders headers; //headers of the webhook event (mainly for debugging)
     @Enumerated(EnumType.STRING)
-    private Status status; //status PENDING, FAILED, DELIVERED, DLQ
+    private WebhookEventStatus status; //status PENDING, FAILED, DELIVERED, DLQ
 }

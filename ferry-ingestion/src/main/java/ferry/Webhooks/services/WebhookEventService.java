@@ -7,10 +7,7 @@ import ferry.UserWebHookInteraction.repos.WebhookUsageRepo;
 import ferry.UserWebHookInteraction.services.EncryptionService;
 import ferry.Webhooks.Util.GithubWebhookVerifier;
 import ferry.Webhooks.Util.WebhookSignatureVerfier;
-import ferry.Webhooks.entities.OutboxEvent;
-import ferry.Webhooks.entities.OutboxStatus;
-import ferry.Webhooks.entities.Status;
-import ferry.Webhooks.entities.WebhookEvent;
+import ferry.Webhooks.entities.*;
 import ferry.Webhooks.repos.OutboxRepo;
 import ferry.Webhooks.repos.WebhookEventRepo;
 import jakarta.transaction.Transactional;
@@ -72,7 +69,7 @@ public class WebhookEventService {
                 .builder()
                 .endpointId(webhookEndpoint.getEndpointId())
                 .payload(payload)
-                .status(Status.PENDING)
+                .status(WebhookEventStatus.PENDING)
                 .headers(httpHeaders)
                 .receivedAt(Instant.now())
                 .build();
@@ -94,4 +91,5 @@ public class WebhookEventService {
         //save it
         outboxRepo.save(outboxEvent);
     }
+
 }
