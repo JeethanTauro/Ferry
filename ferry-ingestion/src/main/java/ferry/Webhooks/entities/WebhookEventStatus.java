@@ -1,6 +1,6 @@
 package ferry.Webhooks.entities;
 
-public enum Status {
+public enum WebhookEventStatus {
     PENDING,
     DELIVERED,
     FAILED,
