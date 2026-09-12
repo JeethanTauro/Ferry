@@ -55,7 +55,7 @@ public class UserInteractionWebhookController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEndpoint(@PathVariable String id){
+    public ResponseEntity<?> deleteEndpoint(@RequestParam String id){
         //1) validate the user
         Long userId = 123l;
         webhookService.deleteWebhook(id,userId);
