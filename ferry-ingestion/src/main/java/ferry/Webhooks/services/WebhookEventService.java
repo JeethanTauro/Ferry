@@ -70,7 +70,7 @@ public class WebhookEventService {
                 .endpointId(webhookEndpoint.getEndpointId())
                 .payload(payload)
                 .status(WebhookEventStatus.PENDING)
-                .headers(httpHeaders)
+                .headers(httpHeaders.toString())
                 .receivedAt(Instant.now())
                 .build();
         webhookEvent = webhookEventRepo.save(webhookEvent);
