@@ -4,7 +4,7 @@ import java.security.SecureRandom;
 //utility class
 public class FerryUtil {
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     //generates cryptographically secure string
     public String generateSecureString() {
