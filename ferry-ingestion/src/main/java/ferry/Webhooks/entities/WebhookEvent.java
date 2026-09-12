@@ -20,7 +20,9 @@ public class WebhookEvent {
     private String endpointId; //which ferry endpoint received it
     private String payload; //the webhook body
     private Instant receivedAt; //time at which the event was received
-    private HttpHeaders headers; //headers of the webhook event (mainly for debugging)
+
+    @Lob
+    private String headers; //headers of the webhook event (mainly for debugging)
     @Enumerated(EnumType.STRING)
     private WebhookEventStatus status; //status PENDING, FAILED, DELIVERED, DLQ
 }
