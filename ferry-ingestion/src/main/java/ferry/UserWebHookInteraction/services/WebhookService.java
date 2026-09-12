@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
 //user facing services
 public class WebhookService {
     //create webhook : Done
@@ -28,15 +27,22 @@ public class WebhookService {
     //read a single webhook :Done
     //read all the webhooks for a specific user (so that the dashboard can show the data) : Done
 
-    @Value("${FERRY_PUBLIC_URL}")
-    String baseUrl;
-
-    private final PasswordEncoder passwordEncoder;
+    private final String baseUrl;
     private final WebhookEndpointRepo webhookEndpointRepo;
     private final WebhookUsageRepo webhookUsageRepo;
     private final EncryptionService encryptionService;
 
-
+    public WebhookService(
+            @Value("${FERRY_PUBLIC_URL}") String baseUrl,
+            WebhookEndpointRepo webhookEndpointRepo,
+            WebhookUsageRepo webhookUsageRepo,
+            EncryptionService encryptionService
+    ) {
+        this.baseUrl = baseUrl;
+        this.webhookEndpointRepo = webhookEndpointRepo;
+        this.webhookUsageRepo = webhookUsageRepo;
+        this.encryptionService = encryptionService;
+    }
     //creating the webhook and saving in the db
     public WebhookEndpointCreatedResponse createWebhook(Long userId, String name, String destinationUrl, Provider provider) throws Exception {
         //create a random unique id for the endpoint
@@ -71,7 +77,7 @@ public class WebhookService {
     //disable webhook
     public void disableWebhook(String id, Long userId) {
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
-                .findByIdAndUserId(id, userId)
+                .findByEndpointIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
         webhookEndpoint.setActive(false);
         webhookEndpoint.setUpdatedAt(Instant.now());
@@ -82,7 +88,7 @@ public class WebhookService {
     //delete webhook (when the user click delete, we wil give a warning saying that this action cannot be redone)
     public void deleteWebhook(String id, Long userId){
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
-                .findByIdAndUserId(id, userId)
+                .findByEndpointIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
         webhookEndpointRepo.delete(webhookEndpoint);
         //return success
@@ -121,7 +127,7 @@ public class WebhookService {
     public WebhookResponseWithUsage readWebhook(String id, Long userId) {
 
         WebhookEndpoint endpoint = webhookEndpointRepo
-                .findByIdAndUserId(id, userId)
+                .findByEndpointIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
 
         Optional<WebhookUsage> u = webhookUsageRepo.findByEndpointId(id);
