@@ -7,9 +7,7 @@ import ferry.UserWebHookInteraction.entities.WebhookEndpoint;
 import ferry.UserWebHookInteraction.entities.WebhookUsage;
 import ferry.UserWebHookInteraction.repos.WebhookEndpointRepo;
 import ferry.UserWebHookInteraction.repos.WebhookUsageRepo;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -57,12 +55,20 @@ public class WebhookService {
                 .active(true)
                 .endpoint(baseUrl + "/webhooks/" + endpointId)
                 .userId(userId)
+                .rateLimitPerSecond(10L)
                 .destinationUrl(destinationUrl)
                 .secret(encryptionService.encrypt(secretToken))
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-        webhookEndpointRepo.save(webhookEndpoint);
+        WebhookEndpoint savedWebhookEvent = webhookEndpointRepo.save(webhookEndpoint);
+
+        WebhookUsage usage = WebhookUsage.builder()
+                .endpointId(savedWebhookEvent.getEndpointId())
+                .eventsReceived(0L)
+                .build();
+
+        webhookUsageRepo.save(usage);
 
         WebhookEndpointCreatedResponse response = WebhookEndpointCreatedResponse.builder()
                 .endpoint(webhookEndpoint.getEndpoint())
