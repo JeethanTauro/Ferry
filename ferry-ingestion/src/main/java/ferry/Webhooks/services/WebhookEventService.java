@@ -75,8 +75,9 @@ public class WebhookEventService {
                 .build();
         webhookEvent = webhookEventRepo.save(webhookEvent);
 
+
         //increment the count of the usage of that particular endpoint
-        WebhookUsage webhookUsage = webhookUsageRepo.findByEndpointId(endpointId).orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
+        WebhookUsage webhookUsage = webhookUsageRepo.findByEndpointId(endpointId).orElseThrow(() -> new RuntimeException("Webhook usage not found"));
         webhookUsage.setEventsReceived(webhookUsage.getEventsReceived()+1);
 
         //outbox pattern
