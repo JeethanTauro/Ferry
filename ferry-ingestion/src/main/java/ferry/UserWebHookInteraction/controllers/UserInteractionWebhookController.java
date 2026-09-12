@@ -31,7 +31,7 @@ public class UserInteractionWebhookController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getEndpoint(@RequestParam String id){
+    public ResponseEntity<?> getEndpoint(@PathVariable String id){
         //1) validate the user
         Long userId = 123l;
         WebhookResponseWithUsage webhookResponseWithUsage = webhookService.readWebhook(id,userId);
@@ -55,7 +55,7 @@ public class UserInteractionWebhookController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEndpoint(@RequestParam String id){
+    public ResponseEntity<?> deleteEndpoint(@PathVariable String id){
         //1) validate the user
         Long userId = 123l;
         webhookService.deleteWebhook(id,userId);
