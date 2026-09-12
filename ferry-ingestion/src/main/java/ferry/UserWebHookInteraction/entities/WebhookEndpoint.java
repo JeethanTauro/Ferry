@@ -1,8 +1,10 @@
 package ferry.UserWebHookInteraction.entities;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
@@ -10,6 +12,8 @@ import java.time.Instant;
 @Data
 @Table(name="webhook_endpoints")
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class WebhookEndpoint {
     @Id
     private String endpointId; //the endpoint id
