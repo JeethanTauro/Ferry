@@ -1,18 +1,17 @@
 package ferry.DeliveryToWorkers.services;
 
 import ferry.DeliveryToWorkers.config.RabbitmqConfig;
+import ferry.DeliveryToWorkers.dto.WebhookEventMessage;
 import ferry.Webhooks.entities.OutboxEvent;
 import ferry.Webhooks.entities.OutboxStatus;
 import ferry.Webhooks.entities.WebhookEvent;
 import ferry.Webhooks.repos.OutboxRepo;
 import lombok.AllArgsConstructor;
-import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -20,7 +19,6 @@ import java.util.List;
 public class PublisherService {
     private final OutboxRepo outboxRepo;
     private final RabbitTemplate rabbitTemplate;
-    private final TopicExchange topicExchange;
 
 
     @Scheduled(fixedDelay = 5000)
@@ -32,6 +30,13 @@ public class PublisherService {
 
             //from each of the outbox event get the webhook event
             WebhookEvent webhookEvent = outboxEvent.getWebhookEvent();
+            WebhookEventMessage webhookEventMessage = WebhookEventMessage.builder()
+                    .eventId(webhookEvent.getEventId())
+                    .endpointId(webhookEvent.getEndpointId())
+                    .destinationUrl(webhookEvent.getWebhookEndpoint().getDestinationUrl())
+                    .headers(webhookEvent.getHeaders())
+                    .payload(webhookEvent.getPayload())
+                    .build();
 
             // Used to identify which OutboxEvent this RabbitMQ confirmation belongs to
             CorrelationData correlationData =
@@ -40,7 +45,7 @@ public class PublisherService {
             rabbitTemplate.convertAndSend(
                     RabbitmqConfig.EXCHANGE_NAME,
                     RabbitmqConfig.ROUTING_KEY,
-                    webhookEvent,
+                    webhookEventMessage,
                     correlationData
             );
         }
