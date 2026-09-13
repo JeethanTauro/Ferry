@@ -12,7 +12,8 @@ public interface OutboxRepo extends JpaRepository<OutboxEvent, Long> {
     @Query("""
     SELECT o
     FROM OutboxEvent o
-    JOIN FETCH o.webhookEvent
+    JOIN FETCH o.webhookEvent we
+    JOIN FETCH we.webhookEndpoint
     WHERE o.status = :status
 """)
     List<OutboxEvent> findByStatusWithWebhookEvent(
