@@ -1,5 +1,6 @@
 package ferry.Webhooks.entities;
 
+import ferry.UserWebHookInteraction.entities.WebhookEndpoint;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,4 +30,11 @@ public class WebhookEvent {
     private String headers; //headers of the webhook event (mainly for debugging)
     @Enumerated(EnumType.STRING)
     private WebhookEventStatus status; //status PENDING, FAILED, DELIVERED, DLQ
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "endpoint_id",
+            referencedColumnName = "endpoint_id"
+    )
+    private WebhookEndpoint webhookEndpoint; //many webhook events belong to a single endpoint
 }
