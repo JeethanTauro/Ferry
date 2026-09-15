@@ -28,7 +28,8 @@ public class OutboxEvent {
     private Instant publishedAt;
 
     @OneToOne
-    @JoinColumn(name="eventId", referencedColumnName = "eventId",insertable = false,
+    @JoinColumn(name="eventId", referencedColumnName = "eventId", insertable = false,
             updatable = false)
+
     private WebhookEvent webhookEvent;
 }
