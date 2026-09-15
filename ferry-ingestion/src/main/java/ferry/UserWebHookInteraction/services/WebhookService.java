@@ -97,6 +97,17 @@ public class WebhookService {
         webhookEndpointRepo.save(webhookEndpoint);
     }
 
+    //enable webhook
+    public void enableWebhook(String id, Long userId) {
+        WebhookEndpoint webhookEndpoint = webhookEndpointRepo
+                .findByEndpointIdAndUserId(id, userId)
+                .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
+        webhookEndpoint.setActive(true);
+        webhookEndpoint.setUpdatedAt(Instant.now());
+        log.info("Webhook endpoint enabled, endpointId={}", id);
+        webhookEndpointRepo.save(webhookEndpoint);
+    }
+
 
     //delete webhook (when the user click delete, we wil give a warning saying that this action cannot be redone)
     public void deleteWebhook(String id, Long userId){
