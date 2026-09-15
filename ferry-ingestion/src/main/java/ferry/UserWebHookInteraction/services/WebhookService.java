@@ -7,6 +7,7 @@ import ferry.UserWebHookInteraction.entities.WebhookEndpoint;
 import ferry.UserWebHookInteraction.entities.WebhookUsage;
 import ferry.UserWebHookInteraction.repos.WebhookEndpointRepo;
 import ferry.UserWebHookInteraction.repos.WebhookUsageRepo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 //user facing services
 public class WebhookService {
     //create webhook : Done
@@ -63,6 +65,7 @@ public class WebhookService {
                 .build();
         WebhookEndpoint savedWebhookEvent = webhookEndpointRepo.save(webhookEndpoint);
 
+        //creating webhook usage for the webhook end point
         WebhookUsage usage = WebhookUsage.builder()
                 .endpointId(savedWebhookEvent.getEndpointId())
                 .eventsReceived(0L)
@@ -74,6 +77,9 @@ public class WebhookService {
                 .endpoint(webhookEndpoint.getEndpoint())
                 .secretToken(secretToken)
                 .build();
+
+        //log for creating webhook endpoint
+        log.info("Webhook endpoint created successfully, endpointId={}",savedWebhookEvent.getEndpointId());
 
         return response;
         //return the dto as a response
@@ -87,6 +93,7 @@ public class WebhookService {
                 .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
         webhookEndpoint.setActive(false);
         webhookEndpoint.setUpdatedAt(Instant.now());
+        log.info("Webhook endpoint disabled, endpointId={}", id);
         webhookEndpointRepo.save(webhookEndpoint);
     }
 
@@ -96,6 +103,7 @@ public class WebhookService {
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
                 .findByEndpointIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
+        log.info("Webhook endpoint deleted, endpointId={}", id);
         webhookEndpointRepo.delete(webhookEndpoint);
         //return success
     }
@@ -127,6 +135,11 @@ public class WebhookService {
                 .webhookResponseList(webhookResponseList)
                 .build();
 
+        log.debug(
+                "Fetched {} webhook endpoints for userId={}",
+                webhookEndpointList.size(),
+                userId
+        );
         return webhooksResponse;
     }
 
@@ -163,6 +176,7 @@ public class WebhookService {
                 .eventsFailed(webhookUsage != null ? webhookUsage.getEventsFailed() : 0L)
                 .build();
 
+        log.debug("Fetched webhook endpoint with endpointId={}",id);
         return WebhookResponseWithUsage.builder()
                 .webhookResponse(response)
                 .webhookResponseUsage(responseUsage)

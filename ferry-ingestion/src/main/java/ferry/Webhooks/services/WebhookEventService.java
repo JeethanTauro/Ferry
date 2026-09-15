@@ -12,6 +12,7 @@ import ferry.Webhooks.repos.OutboxRepo;
 import ferry.Webhooks.repos.WebhookEventRepo;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ import java.util.Map;
 //for webhook events
 @Service
 @AllArgsConstructor
+@Slf4j
 public class WebhookEventService {
 
     private final WebhookEndpointRepo webhookEndpointRepo;
@@ -75,6 +77,7 @@ public class WebhookEventService {
                 .headers(httpHeaders.toSingleValueMap())
                 .receivedAt(Instant.now())
                 .build();
+        log.info("Webhook event with eventId={} stored for webhook endpointId={}",  webhookEvent.getEventId(),webhookEvent.getEndpointId());
         webhookEvent = webhookEventRepo.save(webhookEvent);
 
 
@@ -92,6 +95,7 @@ public class WebhookEventService {
                 .build();
 
         //save it
+        log.info("Webhook event with eventId={} stored in outbox for webhook endpointId={}", webhookEvent.getEventId(), webhookEvent.getEndpointId());
         outboxRepo.save(outboxEvent);
     }
 

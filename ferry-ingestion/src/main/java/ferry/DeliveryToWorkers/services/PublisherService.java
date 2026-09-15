@@ -7,6 +7,7 @@ import ferry.Webhooks.entities.OutboxStatus;
 import ferry.Webhooks.entities.WebhookEvent;
 import ferry.Webhooks.repos.OutboxRepo;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,6 +17,7 @@ import java.util.List;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class PublisherService {
     private final OutboxRepo outboxRepo;
     private final RabbitTemplate rabbitTemplate;
@@ -42,13 +44,7 @@ public class PublisherService {
             CorrelationData correlationData =
                     new CorrelationData(outboxEvent.getId().toString());
 
-
-            System.out.println("========== PUBLISHING ==========");
-            System.out.println("Event ID: " + webhookEventMessage.getEventId());
-            System.out.println("Endpoint ID: " + webhookEventMessage.getEndpointId());
-            System.out.println("Destination URL: " + webhookEventMessage.getDestinationUrl());
-            System.out.println("Payload: " + webhookEventMessage.getPayload());
-            System.out.println("Headers: " + webhookEventMessage.getHeaders());
+            log.info("Published webhook event with eventId={}, for webhook endpointId={}", webhookEventMessage.getEventId(), webhookEventMessage.getEndpointId());
 
             rabbitTemplate.convertAndSend(
                     RabbitmqConfig.EXCHANGE_NAME,
