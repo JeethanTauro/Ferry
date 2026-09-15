@@ -16,6 +16,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 
 //for webhook events
@@ -70,7 +72,7 @@ public class WebhookEventService {
                 .endpointId(webhookEndpoint.getEndpointId())
                 .payload(payload)
                 .status(WebhookEventStatus.PENDING)
-                .headers(httpHeaders.toString())
+                .headers(httpHeaders.toSingleValueMap())
                 .receivedAt(Instant.now())
                 .build();
         webhookEvent = webhookEventRepo.save(webhookEvent);
