@@ -42,6 +42,14 @@ public class PublisherService {
             CorrelationData correlationData =
                     new CorrelationData(outboxEvent.getId().toString());
 
+
+            System.out.println("========== PUBLISHING ==========");
+            System.out.println("Event ID: " + webhookEventMessage.getEventId());
+            System.out.println("Endpoint ID: " + webhookEventMessage.getEndpointId());
+            System.out.println("Destination URL: " + webhookEventMessage.getDestinationUrl());
+            System.out.println("Payload: " + webhookEventMessage.getPayload());
+            System.out.println("Headers: " + webhookEventMessage.getHeaders());
+
             rabbitTemplate.convertAndSend(
                     RabbitmqConfig.EXCHANGE_NAME,
                     RabbitmqConfig.ROUTING_KEY,
