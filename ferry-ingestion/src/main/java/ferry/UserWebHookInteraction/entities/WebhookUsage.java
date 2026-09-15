@@ -18,7 +18,7 @@ public class WebhookUsage {
     private Long id; //just a primary key
 
     private String endpointId; //this is the webhook endpoint id
-    private Long eventsReceived; //count of events received
-    private Long eventsDelivered; //count of events delivered
-    private Long eventsFailed;//counts of event failed
+    private Long eventsReceived = 0L; //count of events received
+    private Long eventsDelivered = 0L; //count of events delivered
+    private Long eventsFailed = 0L;//counts of event failed
 }
