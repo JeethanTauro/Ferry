@@ -54,6 +54,14 @@ public class UserInteractionWebhookController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @PutMapping("/{id}/enable")
+    public ResponseEntity<?> enableEndpoint(@PathVariable String id){
+        //1) validate the user
+        Long userId =123l;
+        webhookService.enableWebhook(id,userId);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteEndpoint(@PathVariable String id){
         //1) validate the user
