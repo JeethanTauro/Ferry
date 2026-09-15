@@ -69,6 +69,8 @@ public class WebhookService {
         WebhookUsage usage = WebhookUsage.builder()
                 .endpointId(savedWebhookEvent.getEndpointId())
                 .eventsReceived(0L)
+                .eventsDelivered(0L)
+                .eventsFailed(0L)
                 .build();
 
         webhookUsageRepo.save(usage);
