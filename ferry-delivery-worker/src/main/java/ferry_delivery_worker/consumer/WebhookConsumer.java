@@ -33,22 +33,12 @@ public class WebhookConsumer {
     @RabbitListener(queues = RabbitmqConfig.QUEUE_NAME)
     public void consume(WebhookEventMessage message) {
 
-        System.out.println("========== RECEIVED ==========");
-        System.out.println("Event ID: " + message.getEventId());
-        System.out.println("Endpoint ID: " + message.getEndpointId());
-        System.out.println("Destination URL: " + message.getDestinationUrl());
-        System.out.println("Payload: " + message.getPayload());
-        System.out.println("Headers: " + message.getHeaders());
-
-        Optional<WebhookEvent> maybeEvent =
-                webhookEventRepo.findById(message.getEventId());
+        log.info("Received webhook event with eventId={} for endpointId={}",message.getEventId(),message.getEndpointId());
+        Optional<WebhookEvent> maybeEvent = webhookEventRepo.findById(message.getEventId());
 
         if (maybeEvent.isEmpty()) {
 
-            log.error(
-                    "Webhook event {} not found",
-                    message.getEventId()
-            );
+            log.error("Webhook event with eventId={} not found", message.getEventId());
 
             /*
              * We cannot process this message because the corresponding
@@ -95,12 +85,7 @@ public class WebhookConsumer {
              * etc.
              */
 
-            log.warn(
-                    "Delivery failed for event {} due to network error",
-                    event.getEventId(),
-                    e
-            );
-
+            log.warn("Delivery failed for webhook eventId={} and endpointId={}, due to some error", event.getEventId(),message.getEndpointId(), e);
             retryable = true;
         }
         // SUCCESS
@@ -112,7 +97,7 @@ public class WebhookConsumer {
             webhookUsageService.incrementDelivered(
                     event.getEndpointId()
             );
-
+            log.info("Delivered webhook event with eventId={} for endpointId={}",event.getEventId(), event.getEndpointId());
             webhookEventRepo.save(event);
             /*
              * Listener completed successfully.
@@ -138,13 +123,8 @@ public class WebhookConsumer {
         }
         // PERMANENT FAILURE
         event.setStatus(WebhookEventStatus.FAILED);
-
         event.setLastAttemptAt(Instant.now());
-
-        webhookUsageService.incrementFailed(
-                event.getEndpointId()
-        );
-
+        webhookUsageService.incrementFailed(event.getEndpointId());
         webhookEventRepo.save(event);
         /*
          * Permanent failure has been recorded.
@@ -162,7 +142,6 @@ public class WebhookConsumer {
     ) {
 
         int retryCount = event.getRetryCount() + 1;
-
         boolean exhausted = retryCount >= RetryConfig.MAX_ATTEMPTS;
         /*
          * IMPORTANT:
@@ -179,20 +158,19 @@ public class WebhookConsumer {
          */
 
         if (exhausted) {
-
+            log.warn("Published webhook event with eventId={}, endpointId={} into DLQ",message.getEventId(), message.getEndpointId());
             dlqPublisher.publish(message);
-
             event.setStatus(WebhookEventStatus.DLQ);
 
-            webhookUsageService.incrementFailed(
-                    event.getEndpointId()
-            );
+            webhookEventRepo.save(event);
+
+            webhookUsageService.incrementFailed(event.getEndpointId());
 
         } else {
-
+            log.warn("Retrying webhook event with eventId={}, endpointId={}, retrycount={}",message.getEventId(),message.getEndpointId(),retryCount);
             retryPublisher.publish(message, retryCount);
-
             event.setStatus(WebhookEventStatus.PENDING);
+            webhookEventRepo.save(event);
         }
     }
 }
