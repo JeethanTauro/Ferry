@@ -78,6 +78,36 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(
+            UnauthorizedException exception) {
+
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(
+            UnauthorizedException exception) {
+
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(AccountDeletionException.class)
+    public ResponseEntity<Map<String, Object>> handleAccountDeletion(
+            AccountDeletionException exception) {
+
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                exception.getMessage()
+        );
+    }
+
     private ResponseEntity<Map<String, Object>> buildResponse(
             HttpStatus status,
             String message
