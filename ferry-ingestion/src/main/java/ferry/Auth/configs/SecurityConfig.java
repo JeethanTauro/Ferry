@@ -29,6 +29,14 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/login",
+                                "/signup",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico"
+                        ).permitAll()
                         .requestMatchers("/webhooks/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").authenticated()
                         .requestMatchers("/api/v1/endpoints/**").authenticated()
