@@ -10,6 +10,7 @@ import ferry.Webhooks.Util.WebhookSignatureVerfier;
 import ferry.Webhooks.entities.*;
 import ferry.Webhooks.repos.OutboxRepo;
 import ferry.Webhooks.repos.WebhookEventRepo;
+import ferry.exceptions.*;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +18,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 
 
 //for webhook events
@@ -41,7 +40,7 @@ public class WebhookEventService {
         //check if webhook endpoint exists (cuz it could be deleted by the user)
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
                 .findById(endpointId)
-                .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
+                .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
 
         //check if webhook endpoint is active
         if (!webhookEndpoint.isActive()) {
@@ -53,7 +52,7 @@ public class WebhookEventService {
         //verify the signature
         switch (webhookEndpoint.getProvider()) {
             case GITHUB -> verifier = new GithubWebhookVerifier();
-            default -> throw new RuntimeException(
+            default -> throw new UnsupportedWebhookProviderException(
                     "Unsupported webhook provider"
             );
         }
@@ -65,7 +64,7 @@ public class WebhookEventService {
         );
 
         if (!valid) {
-            throw new RuntimeException("Invalid webhook signature");
+            throw new InvalidWebhookSignatureException("Invalid webhook signature");
         }
 
         //save the webhook event
@@ -82,7 +81,7 @@ public class WebhookEventService {
 
 
         //increment the count of the usage of that particular endpoint
-        WebhookUsage webhookUsage = webhookUsageRepo.findByEndpointId(endpointId).orElseThrow(() -> new RuntimeException("Webhook usage not found"));
+        WebhookUsage webhookUsage = webhookUsageRepo.findByEndpointId(endpointId).orElseThrow(() -> new WebhookUsageNotFoundException("Webhook usage not found"));
         webhookUsage.setEventsReceived(webhookUsage.getEventsReceived()+1);
 
         //outbox pattern

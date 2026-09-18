@@ -1,6 +1,7 @@
 package ferry.UserWebHookInteraction.services;
 
 
+import ferry.exceptions.EncryptionException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 

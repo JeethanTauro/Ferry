@@ -7,6 +7,7 @@ import ferry.UserWebHookInteraction.entities.WebhookEndpoint;
 import ferry.UserWebHookInteraction.entities.WebhookUsage;
 import ferry.UserWebHookInteraction.repos.WebhookEndpointRepo;
 import ferry.UserWebHookInteraction.repos.WebhookUsageRepo;
+import ferry.exceptions.EndpointNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -92,7 +93,7 @@ public class WebhookService {
     public void disableWebhook(String id, Long userId) {
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
                 .findByEndpointIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
+                .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
         webhookEndpoint.setActive(false);
         webhookEndpoint.setUpdatedAt(Instant.now());
         log.info("Webhook endpoint disabled, endpointId={}", id);
@@ -103,7 +104,7 @@ public class WebhookService {
     public void enableWebhook(String id, Long userId) {
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
                 .findByEndpointIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
+                .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
         webhookEndpoint.setActive(true);
         webhookEndpoint.setUpdatedAt(Instant.now());
         log.info("Webhook endpoint enabled, endpointId={}", id);
@@ -115,7 +116,7 @@ public class WebhookService {
     public void deleteWebhook(String id, Long userId){
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
                 .findByEndpointIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
+                .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
         log.info("Webhook endpoint deleted, endpointId={}", id);
         webhookEndpointRepo.delete(webhookEndpoint);
         //return success
@@ -127,6 +128,7 @@ public class WebhookService {
         //here we would have to do a join with the endpointUsage table so that when the list
         //of the endpoints are on the dashboard we can see the usage
         List<WebhookEndpoint> webhookEndpointList = webhookEndpointRepo.getAllByUserId(userId);
+
         List<WebhookResponse> webhookResponseList = new ArrayList<>();
 
         //creating the dto so we dont expose the secret hash
@@ -160,7 +162,7 @@ public class WebhookService {
 
         WebhookEndpoint endpoint = webhookEndpointRepo
                 .findByEndpointIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("Webhook endpoint not found"));
+                .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
 
         Optional<WebhookUsage> u = webhookUsageRepo.findByEndpointId(id);
         WebhookUsage webhookUsage = new WebhookUsage();
