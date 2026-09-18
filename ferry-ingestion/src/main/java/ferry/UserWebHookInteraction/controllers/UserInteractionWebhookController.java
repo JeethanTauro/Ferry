@@ -1,6 +1,6 @@
 package ferry.UserWebHookInteraction.controllers;
 
-
+import ferry.Auth.services.AuthService;
 import ferry.UserWebHookInteraction.dtos.WebhookEndpointCreateRequest;
 import ferry.UserWebHookInteraction.dtos.WebhookEndpointCreatedResponse;
 import ferry.UserWebHookInteraction.dtos.WebhookResponseWithUsage;
@@ -9,8 +9,8 @@ import ferry.UserWebHookInteraction.services.WebhookService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
 
 @AllArgsConstructor
 @RestController
@@ -18,70 +18,56 @@ import org.springframework.web.bind.annotation.*;
 public class UserInteractionWebhookController {
 
     private final WebhookService webhookService;
-    //This endpoint creates a unique id for a receiving a webhook
-    //input : name of the url, destination url
-    //output: endpoint, secret token
+    private final AuthService authService;
 
-    @GetMapping()
-    public ResponseEntity<?> getEndpoints(){
-        //1) validate the user
-        Long userId = 123l;
-        WebhooksResponse webhooksResponse = webhookService.readWebhooks(userId);
-        return new ResponseEntity<>(webhooksResponse, HttpStatus.OK);
+    @GetMapping
+    public ResponseEntity<WebhooksResponse> getEndpoints(Authentication authentication) {
+        Long userId = authService.getUserId(authentication);
+        WebhooksResponse response = webhookService.readWebhooks(userId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getEndpoint(@PathVariable String id){
-        //1) validate the user
-        Long userId = 123l;
-        WebhookResponseWithUsage webhookResponseWithUsage = webhookService.readWebhook(id,userId);
-        return new ResponseEntity<>(webhookResponseWithUsage, HttpStatus.OK);
+    public ResponseEntity<WebhookResponseWithUsage> getEndpoint(@PathVariable String id, Authentication authentication) {
+
+        Long userId = authService.getUserId(authentication);
+        WebhookResponseWithUsage response = webhookService.readWebhook(id, userId);
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping()
-    public ResponseEntity<?> createEndpoint(@RequestBody WebhookEndpointCreateRequest request) throws Exception {
-        // 1) validate the user and get the user id
-        Long userId = 1234l;
-        WebhookEndpointCreatedResponse response = webhookService.createWebhook(userId,request.getName(), request.getDestinationUrl(), request.getProvider());
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    @PostMapping
+    public ResponseEntity<WebhookEndpointCreatedResponse> createEndpoint(@RequestBody WebhookEndpointCreateRequest request, Authentication authentication) throws Exception {
+        Long userId = authService.getUserId(authentication);
+        WebhookEndpointCreatedResponse response = webhookService.createWebhook(
+                        userId,
+                        request.getName(),
+                        request.getDestinationUrl(),
+                        request.getProvider()
+                );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}/disable")
-    public ResponseEntity<?> disableEndpoint(@PathVariable String id){
-        //1) validate the user
-        Long userId =123l;
-        webhookService.disableWebhook(id,userId);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Void> disableEndpoint(@PathVariable String id, Authentication authentication) {
+
+        Long userId = authService.getUserId(authentication);
+        webhookService.disableWebhook(id, userId);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{id}/enable")
-    public ResponseEntity<?> enableEndpoint(@PathVariable String id){
-        //1) validate the user
-        Long userId =123l;
-        webhookService.enableWebhook(id,userId);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Void> enableEndpoint(@PathVariable String id, Authentication authentication) {
+
+        Long userId = authService.getUserId(authentication);
+        webhookService.enableWebhook(id, userId);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEndpoint(@PathVariable String id){
-        //1) validate the user
-        Long userId = 123l;
-        webhookService.deleteWebhook(id,userId);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    public ResponseEntity<Void> deleteEndpoint(@PathVariable String id, Authentication authentication) {
+        Long userId = authService.getUserId(authentication);
+        webhookService.deleteWebhook(id, userId);
+        return ResponseEntity.noContent().build();
     }
-
-
-    //replay
-//    User clicks Replay
-//       ↓
-//    Ferry takes stored event from DLQ
-//       ↓
-//    puts it back into RabbitMQ
-//       ↓
-//    Worker attempts delivery again
-//       ↓
-//    Consumer receives it
-
-
-    //updating we can update the name, im not sur what else
 }
