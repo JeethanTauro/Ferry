@@ -88,15 +88,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<Map<String, Object>> handleUnauthorized(
-            UnauthorizedException exception) {
-
-        return buildResponse(
-                HttpStatus.UNAUTHORIZED,
-                exception.getMessage()
-        );
-    }
 
     @ExceptionHandler(AccountDeletionException.class)
     public ResponseEntity<Map<String, Object>> handleAccountDeletion(
