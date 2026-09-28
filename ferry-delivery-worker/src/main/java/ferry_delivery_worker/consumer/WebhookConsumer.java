@@ -123,6 +123,7 @@ public class WebhookConsumer {
         }
         // PERMANENT FAILURE
         event.setStatus(WebhookEventStatus.FAILED);
+        log.warn("Webhook event with eventId={} for endpointId={} permanently FAILED",event.getEventId(),event.getEndpointId());
         event.setLastAttemptAt(Instant.now());
         webhookUsageService.incrementFailed(event.getEndpointId());
         webhookEventRepo.save(event);
@@ -136,40 +137,30 @@ public class WebhookConsumer {
     }
 
 
-    private void handleRetry(
-            WebhookEventMessage message,
-            WebhookEvent event
-    ) {
+    private void handleRetry(WebhookEventMessage message, WebhookEvent event) {
 
         int retryCount = event.getRetryCount() + 1;
         boolean exhausted = retryCount >= RetryConfig.MAX_ATTEMPTS;
-        /*
-         * IMPORTANT:
-         *
-         * Publish first.
-         *
-         * RetryPublisher/DlqPublisher must wait for
-         * RabbitMQ publisher confirmation.
-         *
-         * If publishing fails, an exception escapes this method.
-         *
-         * Therefore consume() also fails and the original
-         * RabbitMQ message is NOT ACKed.
-         */
 
         if (exhausted) {
-            log.warn("Published webhook event with eventId={}, endpointId={} into DLQ",message.getEventId(), message.getEndpointId());
             dlqPublisher.publish(message);
+            log.warn("Published webhook event with eventId={}, endpointId={} into DLQ after {} attempts",
+                    message.getEventId(), message.getEndpointId(), retryCount);
+
+            event.setRetryCount(retryCount);
             event.setStatus(WebhookEventStatus.DLQ);
-
+            event.setLastAttemptAt(Instant.now());
             webhookEventRepo.save(event);
-
             webhookUsageService.incrementFailed(event.getEndpointId());
 
         } else {
-            log.warn("Retrying webhook event with eventId={}, endpointId={}, retrycount={}",message.getEventId(),message.getEndpointId(),retryCount);
             retryPublisher.publish(message, retryCount);
+            log.warn("Retrying webhook event with eventId={}, endpointId={}, retryCount={}",
+                    message.getEventId(), message.getEndpointId(), retryCount);
+
+            event.setRetryCount(retryCount);
             event.setStatus(WebhookEventStatus.PENDING);
+            event.setLastAttemptAt(Instant.now());
             webhookEventRepo.save(event);
         }
     }
