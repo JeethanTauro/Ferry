@@ -27,11 +27,11 @@ public class UserInteractionWebhookController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<WebhookResponseWithUsage> getEndpoint(@PathVariable String id, Authentication authentication) {
+    @GetMapping("/{endpointId}")
+    public ResponseEntity<WebhookResponseWithUsage> getEndpoint(@PathVariable String endpointId, Authentication authentication) {
 
         Long userId = authService.getUserId(authentication);
-        WebhookResponseWithUsage response = webhookService.readWebhook(id, userId);
+        WebhookResponseWithUsage response = webhookService.readWebhook(endpointId, userId);
         return ResponseEntity.ok(response);
     }
 
