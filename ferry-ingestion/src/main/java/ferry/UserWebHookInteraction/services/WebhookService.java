@@ -90,34 +90,34 @@ public class WebhookService {
 
 
     //disable webhook
-    public void disableWebhook(String id, Long userId) {
+    public void disableWebhook(String endpointId, Long userId) {
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
-                .findByEndpointIdAndUserId(id, userId)
+                .findByEndpointIdAndUserId(endpointId, userId)
                 .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
         webhookEndpoint.setActive(false);
         webhookEndpoint.setUpdatedAt(Instant.now());
-        log.info("Webhook endpoint disabled, endpointId={}", id);
+        log.info("Webhook endpoint disabled, endpointId={}", endpointId);
         webhookEndpointRepo.save(webhookEndpoint);
     }
 
     //enable webhook
-    public void enableWebhook(String id, Long userId) {
+    public void enableWebhook(String endpointId, Long userId) {
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
-                .findByEndpointIdAndUserId(id, userId)
+                .findByEndpointIdAndUserId(endpointId, userId)
                 .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
         webhookEndpoint.setActive(true);
         webhookEndpoint.setUpdatedAt(Instant.now());
-        log.info("Webhook endpoint enabled, endpointId={}", id);
+        log.info("Webhook endpoint enabled, endpointId={}", endpointId);
         webhookEndpointRepo.save(webhookEndpoint);
     }
 
 
     //delete webhook (when the user click delete, we wil give a warning saying that this action cannot be redone)
-    public void deleteWebhook(String id, Long userId){
+    public void deleteWebhook(String endpointId, Long userId){
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
-                .findByEndpointIdAndUserId(id, userId)
+                .findByEndpointIdAndUserId(endpointId, userId)
                 .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
-        log.info("Webhook endpoint deleted, endpointId={}", id);
+        log.info("Webhook endpoint deleted, endpointId={}", endpointId);
         webhookEndpointRepo.delete(webhookEndpoint);
         //return success
     }

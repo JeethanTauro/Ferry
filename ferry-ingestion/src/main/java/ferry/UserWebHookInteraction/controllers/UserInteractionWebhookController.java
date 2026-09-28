@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @AllArgsConstructor
@@ -49,26 +50,26 @@ public class UserInteractionWebhookController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PutMapping("/{id}/disable")
-    public ResponseEntity<Void> disableEndpoint(@PathVariable String id, Authentication authentication) {
+    @PutMapping("/{endpointId}/disable")
+    public ResponseEntity<Void> disableEndpoint(@PathVariable String endpointId, Authentication authentication) {
 
         Long userId = authService.getUserId(authentication);
-        webhookService.disableWebhook(id, userId);
+        webhookService.disableWebhook(endpointId, userId);
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/{id}/enable")
-    public ResponseEntity<Void> enableEndpoint(@PathVariable String id, Authentication authentication) {
+    @PutMapping("/{endpointId}/enable")
+    public ResponseEntity<Void> enableEndpoint(@PathVariable String endpointId, Authentication authentication) {
 
         Long userId = authService.getUserId(authentication);
-        webhookService.enableWebhook(id, userId);
+        webhookService.enableWebhook(endpointId, userId);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEndpoint(@PathVariable String id, Authentication authentication) {
+    @DeleteMapping("/{endpointId}")
+    public ResponseEntity<Void> deleteEndpoint(@PathVariable String endpointId, Authentication authentication) {
         Long userId = authService.getUserId(authentication);
-        webhookService.deleteWebhook(id, userId);
+        webhookService.deleteWebhook(endpointId, userId);
         return ResponseEntity.noContent().build();
     }
 }
