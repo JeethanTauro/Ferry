@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-import { getEndpoint } from "../../services/api.js";
+import { getEndpoint, getWebhookEvents } from "../../services/api.js";
 
 import "./EndpointDashboard.css";
 
@@ -13,6 +13,7 @@ function EndpointDashboard() {
   const [endpoint, setEndpoint] = useState(null);
   const [usage, setUsage] = useState(null);
 
+  const [events, setEvents] = useState([]);
   const { user, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -42,8 +43,12 @@ function EndpointDashboard() {
           id
         );
 
+        const webhookEvents = await getWebhookEvents(idToken,id);
+        console.log("Webhook events:", webhookEvents);
+
         setEndpoint(data.webhookResponse);
         setUsage(data.webhookResponseUsage);
+        setEvents(webhookEvents)
 
       } catch (error) {
 
@@ -219,6 +224,90 @@ function EndpointDashboard() {
         </div>
 
       </section>
+
+      <section className="dashboard-events">
+
+  <div className="dashboard-card">
+
+    <h2>Webhook Events</h2>
+
+    {events.length === 0 ? (
+
+      <p className="empty-events">
+        No webhook events received yet.
+      </p>
+
+    ) : (
+
+      <div className="events-list">
+
+        {events.map((event, index) => (
+
+          <div className="event-card" key={index}>
+
+            <div className="event-header">
+
+              <div>
+                <span className="event-label">
+                  Status
+                </span>
+
+                <strong className="event-status">
+                  {event.status}
+                </strong>
+              </div>
+
+              <div>
+                <span className="event-label">
+                  Received At
+                </span>
+
+                <span>
+                  {new Date(
+                    event.receivedAt
+                  ).toLocaleString()}
+                </span>
+              </div>
+
+            </div>
+
+
+            <div className="event-section">
+
+              <h3>Payload</h3>
+
+              <pre>
+                {event.payload}
+              </pre>
+
+            </div>
+
+
+            <div className="event-section">
+
+              <h3>Headers</h3>
+
+              <pre>
+                {JSON.stringify(
+                  event.headers,
+                  null,
+                  2
+                )}
+              </pre>
+
+            </div>
+
+          </div>
+
+        ))}
+
+      </div>
+
+    )}
+
+  </div>
+
+</section>
 
     </main>
   );
