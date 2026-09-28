@@ -7,6 +7,8 @@ import ferry.UserWebHookInteraction.dtos.WebhookResponseWithUsage;
 import ferry.UserWebHookInteraction.dtos.WebhooksResponse;
 import ferry.UserWebHookInteraction.services.WebhookService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/v1/endpoints")
+@Validated
 public class UserInteractionWebhookController {
 
     private final WebhookService webhookService;
@@ -30,7 +33,7 @@ public class UserInteractionWebhookController {
     }
 
     @GetMapping("/{endpointId}")
-    public ResponseEntity<WebhookResponseWithUsage> getEndpoint(@PathVariable String endpointId, Authentication authentication) {
+    public ResponseEntity<WebhookResponseWithUsage> getEndpoint(@PathVariable @NotBlank @Size(min = 25, max = 25) String endpointId, Authentication authentication) {
 
         Long userId = authService.getUserId(authentication);
         WebhookResponseWithUsage response = webhookService.readWebhook(endpointId, userId);
@@ -51,7 +54,7 @@ public class UserInteractionWebhookController {
     }
 
     @PutMapping("/{endpointId}/disable")
-    public ResponseEntity<Void> disableEndpoint(@PathVariable String endpointId, Authentication authentication) {
+    public ResponseEntity<Void> disableEndpoint(@PathVariable @NotBlank @Size(min = 25, max = 25) String endpointId, Authentication authentication) {
 
         Long userId = authService.getUserId(authentication);
         webhookService.disableWebhook(endpointId, userId);
@@ -59,7 +62,7 @@ public class UserInteractionWebhookController {
     }
 
     @PutMapping("/{endpointId}/enable")
-    public ResponseEntity<Void> enableEndpoint(@PathVariable String endpointId, Authentication authentication) {
+    public ResponseEntity<Void> enableEndpoint(@PathVariable @NotBlank @Size(min = 25, max = 25) String endpointId, Authentication authentication) {
 
         Long userId = authService.getUserId(authentication);
         webhookService.enableWebhook(endpointId, userId);
@@ -67,7 +70,7 @@ public class UserInteractionWebhookController {
     }
 
     @DeleteMapping("/{endpointId}")
-    public ResponseEntity<Void> deleteEndpoint(@PathVariable String endpointId, Authentication authentication) {
+    public ResponseEntity<Void> deleteEndpoint(@PathVariable @NotBlank @Size(min = 25, max = 25) String endpointId, Authentication authentication) {
         Long userId = authService.getUserId(authentication);
         webhookService.deleteWebhook(endpointId, userId);
         return ResponseEntity.noContent().build();
