@@ -34,6 +34,8 @@ public class RabbitmqConfig {
     public Queue webhookQueue() {
         return QueueBuilder
                 .durable(QUEUE_NAME)
+                .deadLetterExchange(DLQ_EXCHANGE)        // where rejected messages go
+                .deadLetterRoutingKey(DLQ_ROUTING_KEY)   // routes into webhook.dlq
                 .build();
     }
 
