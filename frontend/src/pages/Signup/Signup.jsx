@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom"
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -10,6 +11,7 @@ import "./Signup.css";
 import { loginToFerry } from "../../services/api";
 function Signup() {
 
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,7 +48,6 @@ function Signup() {
       const idToken = await userCredential.user.getIdToken(true);
 
       await loginToFerry(idToken);
-
       navigate("/endpoints");
 
     } catch (error) {
