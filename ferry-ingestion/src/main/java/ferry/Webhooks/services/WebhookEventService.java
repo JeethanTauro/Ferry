@@ -7,6 +7,7 @@ import ferry.UserWebHookInteraction.repos.WebhookUsageRepo;
 import ferry.UserWebHookInteraction.services.EncryptionService;
 import ferry.Webhooks.Util.GithubWebhookVerifier;
 import ferry.Webhooks.Util.WebhookSignatureVerfier;
+import ferry.Webhooks.dtos.WebhookEventResponseDto;
 import ferry.Webhooks.entities.*;
 import ferry.Webhooks.repos.OutboxRepo;
 import ferry.Webhooks.repos.WebhookEventRepo;
@@ -18,6 +19,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 
 //for webhook events
@@ -96,6 +99,33 @@ public class WebhookEventService {
         //save it
         log.info("Webhook event with eventId={} stored in outbox for webhook endpointId={}", webhookEvent.getEventId(), webhookEvent.getEndpointId());
         outboxRepo.save(outboxEvent);
+    }
+
+    //get all the webhook events that hit the endpoint with endpointId
+    public List<WebhookEventResponseDto> getWebhookEvents(Long userId,String endpointId){
+
+        WebhookEndpoint endpoint = webhookEndpointRepo.findById(endpointId)
+                .orElseThrow(() ->
+                        new EndpointNotFoundException("Webhook endpoint not found"));
+
+        //check if the endpoint belongs to the user
+        if (!endpoint.getUserId().equals(userId)) {
+            throw new EndpointNotFoundException("Webhook endpoint not found");
+        }
+
+        List<WebhookEvent> webhookEvents = webhookEventRepo.getAllByEndpointId(endpointId);
+        List<WebhookEventResponseDto> webhookEventResponseDtos = new ArrayList<>();
+        for(WebhookEvent webhookEvent :  webhookEvents){
+            WebhookEventResponseDto webhookEventResponseDto = WebhookEventResponseDto.builder()
+                    .headers(webhookEvent.getHeaders())
+                    .payload(webhookEvent.getPayload())
+                    .receivedAt(webhookEvent.getReceivedAt())
+                    .status(webhookEvent.getStatus())
+                    .build();
+            webhookEventResponseDtos.add(webhookEventResponseDto);
+        }
+
+        return webhookEventResponseDtos;
     }
 
 }
