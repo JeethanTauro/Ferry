@@ -159,13 +159,13 @@ public class WebhookService {
         return webhooksResponse;
     }
 
-    public WebhookResponseWithUsage readWebhook(String id, Long userId) {
+    public WebhookResponseWithUsage readWebhook(String endpointId, Long userId) {
 
         WebhookEndpoint endpoint = webhookEndpointRepo
-                .findByEndpointIdAndUserId(id, userId)
+                .findByEndpointIdAndUserId(endpointId, userId)
                 .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
 
-        Optional<WebhookUsage> u = webhookUsageRepo.findByEndpointId(id);
+        Optional<WebhookUsage> u = webhookUsageRepo.findByEndpointId(endpointId);
         WebhookUsage webhookUsage = new WebhookUsage();
         if(u.isPresent()){
             webhookUsage = u.get();
@@ -193,7 +193,7 @@ public class WebhookService {
                 .eventsFailed(webhookUsage != null ? webhookUsage.getEventsFailed() : 0L)
                 .build();
 
-        log.debug("Fetched webhook endpoint with endpointId={}",id);
+        log.debug("Fetched webhook endpoint with endpointId={}",endpointId);
         return WebhookResponseWithUsage.builder()
                 .webhookResponse(response)
                 .webhookResponseUsage(responseUsage)
