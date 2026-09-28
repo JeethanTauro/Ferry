@@ -125,3 +125,21 @@ export async function getEndpoint(idToken, endpointId) {
 
   return response.json();
 }
+
+export async function getWebhookEvents(idToken, endpointId) {
+  const response = await fetch(
+    `${API_BASE_URL}/webhooks/${endpointId}/events`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch webhook events");
+  }
+
+  return response.json();
+}
