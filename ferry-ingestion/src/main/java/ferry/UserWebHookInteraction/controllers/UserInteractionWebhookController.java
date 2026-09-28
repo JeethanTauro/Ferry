@@ -6,6 +6,7 @@ import ferry.UserWebHookInteraction.dtos.WebhookEndpointCreatedResponse;
 import ferry.UserWebHookInteraction.dtos.WebhookResponseWithUsage;
 import ferry.UserWebHookInteraction.dtos.WebhooksResponse;
 import ferry.UserWebHookInteraction.services.WebhookService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +37,7 @@ public class UserInteractionWebhookController {
     }
 
     @PostMapping
-    public ResponseEntity<WebhookEndpointCreatedResponse> createEndpoint(@RequestBody WebhookEndpointCreateRequest request, Authentication authentication) throws Exception {
+    public ResponseEntity<WebhookEndpointCreatedResponse> createEndpoint(@Valid @RequestBody WebhookEndpointCreateRequest request, Authentication authentication) throws Exception {
         Long userId = authService.getUserId(authentication);
         WebhookEndpointCreatedResponse response = webhookService.createWebhook(
                         userId,
