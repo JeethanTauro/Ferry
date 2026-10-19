@@ -51,7 +51,10 @@ public class WebhookConsumer {
         }
 
         WebhookEvent event = maybeEvent.get();
-
+        if (event.getStatus() == WebhookEventStatus.DELIVERED) {
+            log.info("Event with eventId={} already marked DELIVERED. Skipping duplicate delivery.", event.getEventId());
+            return;
+        }
 
         PayloadDto payloadDto =
                 PayloadDto.builder()
