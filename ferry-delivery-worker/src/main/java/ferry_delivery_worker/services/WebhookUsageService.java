@@ -2,6 +2,7 @@ package ferry_delivery_worker.services;
 
 import ferry_delivery_worker.entity.WebhookUsage;
 import ferry_delivery_worker.repo.WebhookUsageRepo;
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,29 +14,19 @@ public class WebhookUsageService {
 
     private final WebhookUsageRepo webhookUsageRepo;
 
+    @Transactional
     public void incrementDelivered(String endpointId) {
-
-        WebhookUsage usage =
-                webhookUsageRepo.findByEndpointId(endpointId)
-                        .orElseThrow();
-
-        usage.setEventsDelivered(
-                usage.getEventsDelivered() + 1
-        );
-
-        webhookUsageRepo.save(usage);
+        int rowsAffected = webhookUsageRepo.incrementDeliveredAtomic(endpointId);
+        if(rowsAffected == 0){
+            throw new IllegalStateException("WebhookUsage record not found for endpointId: " + endpointId);
+        }
     }
 
+    @Transactional
     public void incrementFailed(String endpointId) {
-
-        WebhookUsage usage =
-                webhookUsageRepo.findByEndpointId(endpointId)
-                        .orElseThrow();
-
-        usage.setEventsFailed(
-                usage.getEventsFailed() + 1
-        );
-
-        webhookUsageRepo.save(usage);
+       int rowsAffected =  webhookUsageRepo.incrementFailedAtomic(endpointId);
+       if(rowsAffected == 0){
+           throw new IllegalStateException("WebhookUsage record not found for endpointId: " + endpointId);
+       }
     }
 }
