@@ -143,3 +143,31 @@ export async function getWebhookEvents(idToken, endpointId) {
 
   return response.json();
 }
+
+export async function replayWebhookEvent(idToken, eventId) {
+  const response = await fetch(
+    `${API_BASE_URL}/webhooks/${eventId}/replay`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    let errorMessage = "Failed to replay webhook event";
+    try {
+      const errorData = await response.json();
+      if (errorData && errorData.message) {
+        errorMessage = errorData.message;
+      }
+    } catch {
+      // ignore json parse error
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
