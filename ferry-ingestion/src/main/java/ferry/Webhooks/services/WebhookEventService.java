@@ -1,12 +1,12 @@
 package ferry.Webhooks.services;
 
 import ferry.UserWebHookInteraction.entities.WebhookEndpoint;
-import ferry.UserWebHookInteraction.entities.WebhookUsage;
 import ferry.UserWebHookInteraction.repos.WebhookEndpointRepo;
 import ferry.UserWebHookInteraction.repos.WebhookUsageRepo;
 import ferry.UserWebHookInteraction.services.EncryptionService;
 import ferry.Webhooks.Util.GithubWebhookVerifier;
-import ferry.Webhooks.Util.WebhookSignatureVerfier;
+import ferry.Webhooks.Util.WebhookSignatureVerifier;
+import ferry.Webhooks.Util.WebhookVerifierFactory;
 import ferry.Webhooks.dtos.WebhookEventResponseDto;
 import ferry.Webhooks.entities.*;
 import ferry.Webhooks.repos.OutboxRepo;
@@ -34,6 +34,7 @@ public class WebhookEventService {
     private final WebhookEventRepo webhookEventRepo;
     private final WebhookUsageRepo webhookUsageRepo;
     private final OutboxRepo outboxRepo;
+    private final WebhookVerifierFactory verifierFactory;
 
 
     //as there are multiple steps, saving into multiple tables, we need it to be transactional
@@ -47,25 +48,15 @@ public class WebhookEventService {
 
         //check if webhook endpoint is active
         if (!webhookEndpoint.isActive()) {
-            throw new RuntimeException("Webhook endpoint is inactive");
+            throw new WebhookEndpointInactiveException("Webhook endpoint is inactive");
         }
         String secret = encryptionService.decrypt(webhookEndpoint.getSecret());
-        WebhookSignatureVerfier verifier;
+
 
         //verify the signature
-        switch (webhookEndpoint.getProvider()) {
-            case GITHUB -> verifier = new GithubWebhookVerifier();
-            default -> throw new UnsupportedWebhookProviderException(
-                    "Unsupported webhook provider"
-            );
-        }
+        WebhookSignatureVerifier verifier = verifierFactory.getVerifier(webhookEndpoint.getProvider());
 
-        boolean valid = verifier.verify(
-                payload,
-                httpHeaders,
-                secret
-        );
-
+        boolean valid = verifier.verify(payload, httpHeaders, secret);
         if (!valid) {
             throw new InvalidWebhookSignatureException("Invalid webhook signature");
         }
@@ -84,8 +75,10 @@ public class WebhookEventService {
 
 
         //increment the count of the usage of that particular endpoint
-        WebhookUsage webhookUsage = webhookUsageRepo.findByEndpointId(endpointId).orElseThrow(() -> new WebhookUsageNotFoundException("Webhook usage not found"));
-        webhookUsage.setEventsReceived(webhookUsage.getEventsReceived()+1);
+        int rowsAffected  = webhookUsageRepo.incrementEventReceived(endpointId);
+        if(rowsAffected == 0){
+            throw new EndpointNotFoundException("Endpoint not found");
+        }
 
         //outbox pattern
         OutboxEvent outboxEvent = OutboxEvent
@@ -108,8 +101,7 @@ public class WebhookEventService {
                 .orElseThrow(() ->
                         new EndpointNotFoundException("Webhook endpoint not found"));
 
-        //check if the endpoint belongs to the user
-        if (!endpoint.getUserId().equals(userId)) {
+        if (endpoint.isDeleted() || !endpoint.getUserId().equals(userId)) {
             throw new EndpointNotFoundException("Webhook endpoint not found");
         }
 
@@ -117,6 +109,7 @@ public class WebhookEventService {
         List<WebhookEventResponseDto> webhookEventResponseDtos = new ArrayList<>();
         for(WebhookEvent webhookEvent :  webhookEvents){
             WebhookEventResponseDto webhookEventResponseDto = WebhookEventResponseDto.builder()
+                    .eventId(webhookEvent.getEventId())
                     .headers(webhookEvent.getHeaders())
                     .payload(webhookEvent.getPayload())
                     .receivedAt(webhookEvent.getReceivedAt())
