@@ -13,6 +13,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 public class WebhookEventResponseDto {
+    private Long eventId;
     private String payload;
     private Instant receivedAt;
     private Map<String, String> headers;
