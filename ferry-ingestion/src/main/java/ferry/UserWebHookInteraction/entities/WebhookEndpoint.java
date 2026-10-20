@@ -29,4 +29,8 @@ public class WebhookEndpoint {
     private Instant createdAt; // created at timestamp
     private Instant updatedAt; //last updated at (maybe disabled, or enabled or name changed etc)
     private String secret; //this secre is to validate the webhook events (must be encrypted and stored, because ferry needs the original secret key to sign too)
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 }

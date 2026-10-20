@@ -9,7 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface WebhookEndpointRepo extends JpaRepository<WebhookEndpoint, String> {
-    List<WebhookEndpoint> getAllByUserId(Long userId);
-    Optional<WebhookEndpoint> findByEndpointIdAndUserId(String endpointId, Long userId);
+    List<WebhookEndpoint> getAllByUserIdAndDeletedFalse(Long userId);
+
+    Optional<WebhookEndpoint> findByEndpointIdAndUserIdAndDeletedFalse(String endpointId, Long userId);
 
 }
