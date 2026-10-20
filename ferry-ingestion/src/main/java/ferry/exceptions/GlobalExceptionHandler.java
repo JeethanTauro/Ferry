@@ -65,6 +65,24 @@ public class GlobalExceptionHandler {
         );
     }
 
+
+    @ExceptionHandler(WebhookEventNotFound.class)
+    public ResponseEntity<Map<String, Object>> handleWebhookEventNotFound(WebhookEventNotFound ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUserNotFound(UserNotFoundException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(CannotReplayException.class)
+    public ResponseEntity<Map<String, Object>> handleCannotReplay(CannotReplayException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+
+
     // Catch unexpected exceptions
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleUnexpectedException(
@@ -98,6 +116,8 @@ public class GlobalExceptionHandler {
                 exception.getMessage()
         );
     }
+
+
 
     private ResponseEntity<Map<String, Object>> buildResponse(
             HttpStatus status,
