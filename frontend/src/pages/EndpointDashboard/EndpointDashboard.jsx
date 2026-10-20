@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
 
-import { getEndpoint, getWebhookEvents } from "../../services/api.js";
+import { getEndpoint, getWebhookEvents, replayWebhookEvent } from "../../services/api.js";
 
 import "./EndpointDashboard.css";
 
@@ -18,6 +18,57 @@ function EndpointDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [replayingEventId, setReplayingEventId] = useState(null);
+  const [actionFeedback, setActionFeedback] = useState(null);
+
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case "DELIVERED":
+        return "status-delivered";
+      case "FAILED":
+        return "status-failed";
+      case "DLQ":
+        return "status-dlq";
+      case "PENDING":
+        return "status-pending";
+      default:
+        return "";
+    }
+  };
+
+  const handleReplayEvent = async (eventId) => {
+    try {
+      setReplayingEventId(eventId);
+      setActionFeedback(null);
+
+      if (!user) {
+        throw new Error("You are not authenticated.");
+      }
+
+      const idToken = await user.getIdToken();
+      await replayWebhookEvent(idToken, eventId);
+
+      // Optimistically update the event's status to PENDING
+      setEvents((prevEvents) =>
+        prevEvents.map((ev) =>
+          ev.eventId === eventId ? { ...ev, status: "PENDING" } : ev
+        )
+      );
+
+      setActionFeedback({
+        type: "success",
+        message: `Event #${eventId} queued for replay successfully.`,
+      });
+    } catch (err) {
+      console.error("Failed to replay event:", err);
+      setActionFeedback({
+        type: "error",
+        message: err.message || "Failed to replay webhook event.",
+      });
+    } finally {
+      setReplayingEventId(null);
+    }
+  };
 
 
   useEffect(() => {
@@ -227,87 +278,160 @@ function EndpointDashboard() {
 
       <section className="dashboard-events">
 
-  <div className="dashboard-card">
+        <div className="dashboard-card">
 
-    <h2>Webhook Events</h2>
-
-    {events.length === 0 ? (
-
-      <p className="empty-events">
-        No webhook events received yet.
-      </p>
-
-    ) : (
-
-      <div className="events-list">
-
-        {events.map((event, index) => (
-
-          <div className="event-card" key={index}>
-
-            <div className="event-header">
-
-              <div>
-                <span className="event-label">
-                  Status
-                </span>
-
-                <strong className="event-status">
-                  {event.status}
-                </strong>
-              </div>
-
-              <div>
-                <span className="event-label">
-                  Received At
-                </span>
-
-                <span>
-                  {new Date(
-                    event.receivedAt
-                  ).toLocaleString()}
-                </span>
-              </div>
-
-            </div>
-
-
-            <div className="event-section">
-
-              <h3>Payload</h3>
-
-              <pre>
-                {event.payload}
-              </pre>
-
-            </div>
-
-
-            <div className="event-section">
-
-              <h3>Headers</h3>
-
-              <pre>
-                {JSON.stringify(
-                  event.headers,
-                  null,
-                  2
-                )}
-              </pre>
-
-            </div>
-
+          <div className="events-card-header">
+            <h2>Webhook Events</h2>
+            <span className="events-count-badge">
+              {events.length} {events.length === 1 ? "event" : "events"}
+            </span>
           </div>
 
-        ))}
+          {actionFeedback && (
+            <div className={`dashboard-feedback ${actionFeedback.type}`}>
+              <span>{actionFeedback.message}</span>
+              <button
+                type="button"
+                className="feedback-dismiss"
+                onClick={() => setActionFeedback(null)}
+                aria-label="Dismiss feedback"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
-      </div>
+          {events.length === 0 ? (
 
-    )}
+            <p className="empty-events">
+              No webhook events received yet.
+            </p>
 
-  </div>
+          ) : (
 
-</section>
+            <div className="events-list">
+
+              {events.map((event, index) => {
+                const canReplay = event.status === "FAILED" || event.status === "DLQ";
+                const isReplaying = replayingEventId === event.eventId;
+
+                return (
+                  <div className="event-card" key={event.eventId || index}>
+
+                    <div className="event-header">
+
+                      <div className="event-header-left">
+
+                        <div className="event-id-chip" title={`Event ID: ${event.eventId}`}>
+                          #{event.eventId}
+                        </div>
+
+                        <div className="event-header-col">
+                          <span className="event-label">
+                            Status
+                          </span>
+
+                          <span
+                            className={`status-badge event-status-badge ${getStatusBadgeClass(
+                              event.status
+                            )}`}
+                          >
+                            {event.status}
+                          </span>
+                        </div>
+
+                        <div className="event-header-col">
+                          <span className="event-label">
+                            Received At
+                          </span>
+
+                          <span className="event-time">
+                            {new Date(
+                              event.receivedAt
+                            ).toLocaleString()}
+                          </span>
+                        </div>
+
+                      </div>
+
+                      <div className="event-header-right">
+                        {canReplay && (
+                          <button
+                            type="button"
+                            className="event-replay-button"
+                            onClick={() => handleReplayEvent(event.eventId)}
+                            disabled={isReplaying}
+                            title="Replay this failed/DLQ webhook event"
+                          >
+                            {isReplaying ? (
+                              <>
+                                <span className="replay-spinner" />
+                                <span>Replaying...</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  className="replay-icon"
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                                  <path d="M21 3v5h-5" />
+                                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                                  <path d="M8 16H3v5" />
+                                </svg>
+                                <span>Replay</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+
+                    </div>
+
+
+                    <div className="event-section">
+
+                      <h3>Payload</h3>
+
+                      <pre>
+                        {event.payload}
+                      </pre>
+
+                    </div>
+
+
+                    <div className="event-section">
+
+                      <h3>Headers</h3>
+
+                      <pre>
+                        {JSON.stringify(
+                          event.headers,
+                          null,
+                          2
+                        )}
+                      </pre>
+
+                    </div>
+
+                  </div>
+                );
+              })}
+
+            </div>
+
+          )}
+
+        </div>
+
+      </section>
 
     </main>
   );

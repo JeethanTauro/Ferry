@@ -200,22 +200,130 @@
 }
 
 
+.events-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.events-card-header h2 {
+  margin: 0;
+}
+
+.events-count-badge {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* Dashboard feedback alert */
+.dashboard-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.dashboard-feedback.success {
+  background: #eaf7ef;
+  color: var(--success);
+  border: 1px solid #bbf0c8;
+}
+
+.dashboard-feedback.error {
+  background: #fdeceb;
+  color: var(--danger);
+  border: 1px solid #fecdca;
+}
+
+.feedback-dismiss {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.feedback-dismiss:hover {
+  opacity: 1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Event header */
 
 .event-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 18px 20px;
+  gap: 20px;
+  padding: 16px 20px;
   background: var(--background);
   border-bottom: 1px solid var(--border-light);
 }
 
-.event-header > div {
+.event-header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.event-id-chip {
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family:
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.event-header-col {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
+}
+
+.event-time {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.event-header-right {
+  display: flex;
+  align-items: center;
 }
 
 .event-label {
@@ -226,11 +334,96 @@
   letter-spacing: 0.5px;
 }
 
-.event-status {
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 600;
+/* Event Status Badges */
+
+.status-badge.event-status-badge {
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 11px;
+  padding: 3px 9px;
 }
+
+.status-badge.status-delivered {
+  color: var(--success);
+  background: #eaf7ef;
+}
+
+.status-badge.status-failed {
+  color: var(--danger);
+  background: #fdeceb;
+}
+
+.status-badge.status-dlq {
+  color: #b54708;
+  background: #fef3f2;
+  border: 1px solid #fedf89;
+}
+
+.status-badge.status-pending {
+  color: #175cd3;
+  background: #eff8ff;
+}
+
+/* Event Replay Button */
+
+.event-replay-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--ferry-orange);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--ferry-orange);
+  font-size: 13px;
+  font-weight: 600;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.1s ease;
+}
+
+.event-replay-button:hover:not(:disabled) {
+  background: var(--ferry-orange);
+  color: white;
+}
+
+.event-replay-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.event-replay-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.replay-icon {
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.event-replay-button:hover:not(:disabled) .replay-icon {
+  transform: rotate(60deg);
+}
+
+.replay-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: replay-spin 0.65s linear infinite;
+}
+
+@keyframes replay-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 
 
 /* =========================================================
@@ -362,9 +555,23 @@
   }
 
   .event-header {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
     gap: 16px;
+  }
+
+  .event-header-left {
+    gap: 14px;
+  }
+
+  .event-header-right {
+    width: 100%;
+  }
+
+  .event-replay-button {
+    width: 100%;
+    justify-content: center;
+    padding: 9px 16px;
   }
 
   .event-section {
