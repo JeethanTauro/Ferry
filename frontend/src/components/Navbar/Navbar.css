@@ -146,3 +146,27 @@
    color: var(--ferry-orange-dark);
   border-color: var(--ferry-orange);
 }
+
+.navbar-logout {
+  padding: 9px 16px;
+
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.navbar-logout:hover {
+  color: var(--danger);
+  border-color: #fecdca;
+  background: #fdeceb;
+}
