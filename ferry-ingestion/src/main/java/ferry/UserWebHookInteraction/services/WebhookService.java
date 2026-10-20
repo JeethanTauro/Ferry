@@ -8,6 +8,7 @@ import ferry.UserWebHookInteraction.entities.WebhookUsage;
 import ferry.UserWebHookInteraction.repos.WebhookEndpointRepo;
 import ferry.UserWebHookInteraction.repos.WebhookUsageRepo;
 import ferry.exceptions.EndpointNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,8 @@ public class WebhookService {
         this.encryptionService = encryptionService;
     }
     //creating the webhook and saving in the db
+
+    @Transactional
     public WebhookEndpointCreatedResponse createWebhook(Long userId, String name, String destinationUrl, Provider provider) throws Exception {
         //create a random unique id for the endpoint
         //create a random secret
@@ -92,7 +95,7 @@ public class WebhookService {
     //disable webhook
     public void disableWebhook(String endpointId, Long userId) {
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
-                .findByEndpointIdAndUserId(endpointId, userId)
+                .findByEndpointIdAndUserIdAndDeletedFalse(endpointId, userId)
                 .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
         webhookEndpoint.setActive(false);
         webhookEndpoint.setUpdatedAt(Instant.now());
@@ -103,7 +106,7 @@ public class WebhookService {
     //enable webhook
     public void enableWebhook(String endpointId, Long userId) {
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
-                .findByEndpointIdAndUserId(endpointId, userId)
+                .findByEndpointIdAndUserIdAndDeletedFalse(endpointId, userId)
                 .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
         webhookEndpoint.setActive(true);
         webhookEndpoint.setUpdatedAt(Instant.now());
@@ -115,11 +118,16 @@ public class WebhookService {
     //delete webhook (when the user click delete, we wil give a warning saying that this action cannot be redone)
     public void deleteWebhook(String endpointId, Long userId){
         WebhookEndpoint webhookEndpoint = webhookEndpointRepo
-                .findByEndpointIdAndUserId(endpointId, userId)
+                .findByEndpointIdAndUserIdAndDeletedFalse(endpointId, userId)
                 .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
+
+        // Soft delete: deactivate and mark deleted
+        webhookEndpoint.setActive(false);
+        webhookEndpoint.setDeleted(true);
+        webhookEndpoint.setUpdatedAt(Instant.now());
+
+        webhookEndpointRepo.save(webhookEndpoint);
         log.info("Webhook endpoint deleted, endpointId={}", endpointId);
-        webhookEndpointRepo.delete(webhookEndpoint);
-        //return success
     }
 
 
@@ -127,7 +135,7 @@ public class WebhookService {
     public WebhooksResponse readWebhooks(Long userId){
         //here we would have to do a join with the endpointUsage table so that when the list
         //of the endpoints are on the dashboard we can see the usage
-        List<WebhookEndpoint> webhookEndpointList = webhookEndpointRepo.getAllByUserId(userId);
+        List<WebhookEndpoint> webhookEndpointList = webhookEndpointRepo.getAllByUserIdAndDeletedFalse(userId);
 
         List<WebhookResponse> webhookResponseList = new ArrayList<>();
 
@@ -162,7 +170,7 @@ public class WebhookService {
     public WebhookResponseWithUsage readWebhook(String endpointId, Long userId) {
 
         WebhookEndpoint endpoint = webhookEndpointRepo
-                .findByEndpointIdAndUserId(endpointId, userId)
+                .findByEndpointIdAndUserIdAndDeletedFalse(endpointId, userId)
                 .orElseThrow(() -> new EndpointNotFoundException("Webhook endpoint not found"));
 
         Optional<WebhookUsage> u = webhookUsageRepo.findByEndpointId(endpointId);
