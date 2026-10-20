@@ -10,6 +10,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +28,18 @@ public class PublisherService {
     @Scheduled(fixedDelay = 5000)
     public void publish(){
         //got everything in one query , avoided the N+1 problem using JOIN Fetch
-        List<OutboxEvent> outboxEvents =  outboxRepo.findByStatusWithWebhookEvent(OutboxStatus.PENDING); //all the outbox events which are pending with the webhook event too
+        Pageable limit = PageRequest.of(0, 100);
+        List<OutboxEvent> outboxEvents =  outboxRepo.findByStatusWithWebhookEvent(OutboxStatus.PENDING, limit); //all the outbox events which are pending with the webhook event too
+
+        if (outboxEvents.isEmpty()) {
+            return;
+        }
+
+
+        for (OutboxEvent outboxEvent : outboxEvents) {
+            outboxEvent.setStatus(OutboxStatus.IN_FLIGHT);
+        }
+        outboxRepo.saveAll(outboxEvents);
 
         for (OutboxEvent outboxEvent : outboxEvents) {
 
