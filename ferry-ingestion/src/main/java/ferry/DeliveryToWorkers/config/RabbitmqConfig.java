@@ -78,6 +78,10 @@ public class RabbitmqConfig {
                         System.out.println(
                                 "RabbitMQ rejected message: " + cause
                         );
+                        outboxRepo.findById(outboxId).ifPresent(event -> {
+                            event.setStatus(OutboxStatus.PENDING);
+                            outboxRepo.save(event);
+                        });
                     }
                 }
         );
