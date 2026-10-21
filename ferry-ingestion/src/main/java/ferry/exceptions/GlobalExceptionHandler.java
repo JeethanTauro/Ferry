@@ -1,10 +1,12 @@
 package ferry.exceptions;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.time.Instant;
 import java.util.Map;
@@ -82,6 +84,17 @@ public class GlobalExceptionHandler {
     }
 
 
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(HandlerMethodValidationException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST,"Invalid request parameters");
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+
+        return buildResponse(HttpStatus.BAD_REQUEST,"Invalid request parameters");
+    }
 
     // Catch unexpected exceptions
     @ExceptionHandler(Exception.class)
