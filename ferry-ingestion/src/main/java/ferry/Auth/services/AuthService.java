@@ -40,12 +40,9 @@ public class AuthService {
     }
 
     public Long getUserId(Authentication authentication) {
-
         FirebaseUserPrincipal principal = getPrincipal(authentication);
-
-        User user = getOrCreateUser(principal);
-
-        return user.getId();
+        return userRepository.findIdByFirebaseUid(principal.getFirebaseUid())
+                .orElseGet(() -> getOrCreateUser(principal).getId());
     }
 
     public void deleteAccount(Authentication authentication) {
