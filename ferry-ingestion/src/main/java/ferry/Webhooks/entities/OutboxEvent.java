@@ -32,4 +32,7 @@ public class OutboxEvent {
             updatable = false)
 
     private WebhookEvent webhookEvent;
+
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
 }
