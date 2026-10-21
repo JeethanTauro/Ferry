@@ -31,7 +31,7 @@ public class WebhookEvent {
     private String payload; //the webhook body
     private Instant receivedAt; //time at which the event was received
 
-
+    private Instant inFlightAt; //time at which the event was set as IN_FLIGHT
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, String> headers; //headers of the webhook event (mainly for debugging)
