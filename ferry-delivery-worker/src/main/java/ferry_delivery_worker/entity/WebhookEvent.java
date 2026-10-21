@@ -23,4 +23,6 @@ public class WebhookEvent {
     private int retryCount;
 
     private Instant lastAttemptAt;
+
+    private Instant inFlightAt;
 }
