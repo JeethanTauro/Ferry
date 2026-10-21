@@ -8,13 +8,17 @@ import ferry_delivery_worker.entity.WebhookEvent;
 import ferry_delivery_worker.entity.WebhookEventStatus;
 import ferry_delivery_worker.repo.WebhookEventRepo;
 import ferry_delivery_worker.services.*;
+
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -29,142 +33,174 @@ public class WebhookConsumer {
     private final DlqPublisher dlqPublisher;
     private final WebhookUsageService webhookUsageService;
 
-
     @RabbitListener(queues = RabbitmqConfig.QUEUE_NAME)
     public void consume(WebhookEventMessage message) {
 
-        log.info("Received webhook event with eventId={} for endpointId={}",message.getEventId(),message.getEndpointId());
-        Optional<WebhookEvent> maybeEvent = webhookEventRepo.findById(message.getEventId());
+        Long eventId = message.getEventId();
+
+        log.info("Received webhook event eventId={}, endpointId={}",
+                eventId, message.getEndpointId());
+
+        // Claim first, before loading the entity.
+        int claimed = webhookEventRepo.claimEvent(
+                eventId,
+                List.of(
+                        WebhookEventStatus.PENDING,
+                        WebhookEventStatus.FAILED,
+                        WebhookEventStatus.DLQ
+                ),
+                WebhookEventStatus.IN_FLIGHT,
+                Instant.now()
+        );
+
+        log.info("Claim result: eventId={}, claimed={}", eventId, claimed);
+
+        if (claimed == 0) {
+            log.info(
+                    "Event {} is not PENDING; skipping duplicate or concurrent delivery",
+                    eventId
+            );
+            return;
+        }
+
+        Optional<WebhookEvent> maybeEvent =
+                webhookEventRepo.findById(eventId);
+
 
         if (maybeEvent.isEmpty()) {
-
-            log.error("Webhook event with eventId={} not found", message.getEventId());
-
-            /*
-             * We cannot process this message because the corresponding
-             * DB record does not exist.
-             *
-             * For now, return so the message is ACKed rather than
-             * endlessly redelivered.
-             */
+            // The claim succeeded, but the row is unexpectedly missing.
+            log.error("Claimed event {} no longer exists", eventId);
             return;
         }
 
         WebhookEvent event = maybeEvent.get();
-        if (event.getStatus() == WebhookEventStatus.DELIVERED) {
-            log.info("Event with eventId={} already marked DELIVERED. Skipping duplicate delivery.", event.getEventId());
-            return;
-        }
 
-        PayloadDto payloadDto =
-                PayloadDto.builder()
-                        .payload(message.getPayload())
-                        .headers(message.getHeaders())
-                        .eventId(message.getEventId())
-                        .build();
-
-
-        ResponseEntity<String> response = null;
-
-        boolean success = false;
-        boolean retryable = false;
-
-
-        // ATTEMPT DELIVERY
         try {
+            processEvent(message, event);
 
-            response = postService.post(message.getDestinationUrl(), payloadDto, message.getHeaders());
-            success = failureClassifier.isSuccess(response);
-            retryable = !success && failureClassifier.isRetryable(response);
-
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
 
             /*
-             * Network-level failure:
-             *
-             * timeout
-             * connection refused
-             * DNS failure
-             * etc.
+             * An unexpected exception must not silently leave an event
+             * IN_FLIGHT. Reset it so it can be retried, then propagate
+             * the exception to Spring AMQP.
              */
+            if (event.getStatus() == WebhookEventStatus.IN_FLIGHT) {
+                event.setStatus(WebhookEventStatus.PENDING);
+                event.setInFlightAt(null);
+                webhookEventRepo.save(event);
+            }
 
-            log.warn("Delivery failed for webhook eventId={} and endpointId={}, due to some error", event.getEventId(),message.getEndpointId(), e);
-            retryable = true;
+            throw e;
         }
-        // SUCCESS
-        if (success) {
-
-            event.setStatus(WebhookEventStatus.DELIVERED);
-            event.setLastAttemptAt(Instant.now());
-
-            webhookUsageService.incrementDelivered(
-                    event.getEndpointId()
-            );
-            log.info("Delivered webhook event with eventId={} for endpointId={}",event.getEventId(), event.getEndpointId());
-            webhookEventRepo.save(event);
-            /*
-             * Listener completed successfully.
-             *
-             * Spring ACKs the RabbitMQ message.
-             */
-            return;
-        }
-        // RETRYABLE FAILURE
-        if (retryable) {
-
-            handleRetry(message, event);
-            /*
-             * If handleRetry() succeeds:
-             *
-             * retry/DLQ message has been published and confirmed.
-             *
-             * Listener returns.
-             *
-             * Spring ACKs the original message.
-             */
-            return;
-        }
-        // PERMANENT FAILURE
-        event.setStatus(WebhookEventStatus.FAILED);
-        log.warn("Webhook event with eventId={} for endpointId={} permanently FAILED",event.getEventId(),event.getEndpointId());
-        event.setLastAttemptAt(Instant.now());
-        webhookUsageService.incrementFailed(event.getEndpointId());
-        webhookEventRepo.save(event);
-        /*
-         * Permanent failure has been recorded.
-         *
-         * Listener returns.
-         *
-         * Spring ACKs the original message.
-         */
     }
 
+    private void processEvent(
+            WebhookEventMessage message,
+            WebhookEvent event) {
 
-    private void handleRetry(WebhookEventMessage message, WebhookEvent event) {
+        PayloadDto payloadDto = PayloadDto.builder()
+                .payload(message.getPayload())
+                .headers(message.getHeaders())
+                .eventId(message.getEventId())
+                .build();
+
+        ResponseEntity<String> response = null;
+        boolean retryable = false;
+
+        try {
+            response = postService.post(
+                    message.getDestinationUrl(),
+                    payloadDto,
+                    message.getHeaders()
+            );
+
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid destination URL for eventId={}",
+                    event.getEventId(), e);
+
+        } catch (ResourceAccessException e) {
+            log.warn("Transport failure for eventId={}",
+                    event.getEventId(), e);
+
+            retryable = true;
+        }
+
+        boolean success = false;
+
+        if (response != null) {
+            success = failureClassifier.isSuccess(response);
+            retryable = !success
+                    && failureClassifier.isRetryable(response);
+        }
+
+        if (success) {
+            event.setStatus(WebhookEventStatus.DELIVERED);
+            event.setLastAttemptAt(Instant.now());
+            event.setInFlightAt(null);
+
+            webhookEventRepo.save(event);
+            webhookUsageService.incrementDelivered(event.getEndpointId());
+
+            log.info("Delivered eventId={} to endpointId={}",
+                    event.getEventId(), event.getEndpointId());
+            return;
+        }
+
+        if (retryable) {
+            handleRetry(message, event);
+            return;
+        }
+
+        // Permanent failure.
+        event.setStatus(WebhookEventStatus.FAILED);
+        event.setLastAttemptAt(Instant.now());
+        event.setInFlightAt(null);
+
+        webhookEventRepo.save(event);
+        webhookUsageService.incrementFailed(event.getEndpointId());
+
+        log.warn("Event {} permanently failed for endpointId={}",
+                event.getEventId(), event.getEndpointId());
+    }
+
+    private void handleRetry(
+            WebhookEventMessage message,
+            WebhookEvent event) {
 
         int retryCount = event.getRetryCount() + 1;
         boolean exhausted = retryCount >= RetryConfig.MAX_ATTEMPTS;
 
         if (exhausted) {
+
+            // Publish/confirm to DLQ before acknowledging original message.
             dlqPublisher.publish(message);
-            log.warn("Published webhook event with eventId={}, endpointId={} into DLQ after {} attempts",
-                    message.getEventId(), message.getEndpointId(), retryCount);
 
             event.setRetryCount(retryCount);
             event.setStatus(WebhookEventStatus.DLQ);
             event.setLastAttemptAt(Instant.now());
+            event.setInFlightAt(null);
+
             webhookEventRepo.save(event);
             webhookUsageService.incrementFailed(event.getEndpointId());
 
+            log.warn("Event {} moved to DLQ after {} attempts",
+                    event.getEventId(), retryCount);
+
         } else {
+
+            // Publish/confirm retry before acknowledging original message.
             retryPublisher.publish(message, retryCount);
-            log.warn("Retrying webhook event with eventId={}, endpointId={}, retryCount={}",
-                    message.getEventId(), message.getEndpointId(), retryCount);
 
             event.setRetryCount(retryCount);
             event.setStatus(WebhookEventStatus.PENDING);
             event.setLastAttemptAt(Instant.now());
+            event.setInFlightAt(null);
+
             webhookEventRepo.save(event);
+
+            log.warn("Retry scheduled for eventId={}, retryCount={}",
+                    event.getEventId(), retryCount);
         }
     }
 }
