@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.validator.constraints.URL;
 
 @Data
 @NoArgsConstructor
@@ -16,6 +17,7 @@ public class WebhookEndpointCreateRequest {
     private String name;
 
     @NotBlank
+    @URL
     private String destinationUrl;
 
     @NotNull
