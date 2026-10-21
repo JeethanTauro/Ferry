@@ -3,10 +3,7 @@ package ferry.DeliveryToWorkers.config;
 import ferry.Webhooks.entities.OutboxEvent;
 import ferry.Webhooks.entities.OutboxStatus;
 import ferry.Webhooks.repos.OutboxRepo;
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
@@ -23,9 +20,18 @@ public class RabbitmqConfig {
     public static final String EXCHANGE_NAME = "webhook_exchange";
     public static final String ROUTING_KEY = "routing.key.webhook";
 
+
+    public static final String DLQ_NAME = "webhook.dlq";
+    public static final String DLQ_EXCHANGE = "webhook_dlq_exchange";
+    public static final String DLQ_ROUTING_KEY = "webhook.dlq";
+
     @Bean
     public Queue queue() {
-        return new Queue(QUEUE_NAME, true);
+        return QueueBuilder
+                .durable(QUEUE_NAME)
+                .deadLetterExchange(DLQ_EXCHANGE)
+                .deadLetterRoutingKey(DLQ_ROUTING_KEY)
+                .build();
     }
 
     @Bean
@@ -39,6 +45,27 @@ public class RabbitmqConfig {
                 .bind(queue)
                 .to(exchange)
                 .with("routing.key.#");
+    }
+
+
+    @Bean
+    public Queue dlq() {
+        return QueueBuilder
+                .durable(DLQ_NAME)
+                .build();
+    }
+
+    @Bean
+    public DirectExchange dlqExchange() {
+        return new DirectExchange(DLQ_EXCHANGE, true, false);
+    }
+
+    @Bean
+    public Binding dlqBinding() {
+        return BindingBuilder
+                .bind(dlq())
+                .to(dlqExchange())
+                .with(DLQ_ROUTING_KEY);
     }
 
 
