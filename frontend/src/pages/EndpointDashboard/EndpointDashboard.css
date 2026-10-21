@@ -364,6 +364,12 @@
   background: #eff8ff;
 }
 
+.status-badge.status-inflight {
+  color: #000000;
+  background: #eff8ff;
+}
+
+
 /* Event Replay Button */
 
 .event-replay-button {

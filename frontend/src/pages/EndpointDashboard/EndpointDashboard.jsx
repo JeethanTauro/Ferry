@@ -31,6 +31,8 @@ function EndpointDashboard() {
         return "status-dlq";
       case "PENDING":
         return "status-pending";
+      case "IN_FLIGHT":
+        return "status-inflight"
       default:
         return "";
     }
