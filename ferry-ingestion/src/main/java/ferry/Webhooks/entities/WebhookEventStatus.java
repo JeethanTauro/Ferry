@@ -4,5 +4,6 @@ public enum WebhookEventStatus {
     PENDING,
     DELIVERED,
     FAILED,
-    DLQ
+    DLQ,
+    IN_FLIGHT
 }
